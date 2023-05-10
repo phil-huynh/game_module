@@ -1,184 +1,149 @@
 from pprint import pprint
 from random import randint
 
+class GameBoard:
+    def __init__(self, width, **board_specs):
+        self.width = width
+        self.height = board_specs["height"] if board_specs.get("height") else width
+        self.open = board_specs["open"] if board_specs.get("open") else " "
+        self.board = self.create_board()
 
-def square_board(n, open_square = " "):
-    return [[open_square for i in range(n)] for j in range(n)]
+    def create_board(self):
+        return [[self.open for i in range(self.width)] for j in range(self.height)]
 
+    def update_squares(self, func):
+        for i, row in enumerate(self.board):
+            for j, square in enumerate(row):
+                self.board[i][j] = func(square, i, j)
 
-def rect_board(width, height, open_square = " "):
-    return [[open_square for i in range(width)] for j in range(height)]
+    def checker_squares(self, type1, type2):
+        self.update_squares(lambda a, b, c: type1 if (b + c) % 2 == 0 else type2)
 
+    def get_square(self, i, j):
+        return self.board[i][j]
 
-def update_squares(board, func):
-    for i, row in enumerate(board):
-        for j, col in enumerate(row):
-            board[i][j] = func(col, i, j)
-    return board
+    def get_row(self, row):
+        return self.board[row]
 
+    def get_column(self, col):
+        return [row[col] for row in self.board]
 
-def checker_squares(board, type1, type2):
-    return update_squares(board, lambda a, b, c: type1 if (b + c) % 2 == 0 else type2)
+    def change_one_square(self, i, j, change):
+        self.board[i][j] = change
 
+    def change_squares(self, squares, change):
+        for square in squares:
+            self.change_one_square(square[0], square[1], change)
 
-def clear_board(board, open_square=" "):
-    return update_squares(board, lambda a, b, c: open_square)
+    def flip_board_y(self):
+        for row in self.board:
+            row.reverse()
 
+    def flip_board_x(self):
+        self.board.reverse()
 
-def change_one_square(board, i, j, change):
-    board[i][j] = change
-    return board
+    def rotate_board_180(self):
+        self.flip_board_y()
+        self.flip_board_x()
 
+    def clear_board(self):
+        self.update_squares(lambda a, b, c: self.open)
 
-def change_squares(board, squares, change):
-    for square in squares:
-        change_one_square(board, square[0], square[1], change)
-    return board
+    def clear_square(self, i, j):
+        self.change_one_square(i, j)
 
+    def clear_row(self, row):
+        self.board[row] = [self.open for col in self.board[row]]
 
-def flip_board_y(board):
-    for row in board:
-        row.reverse()
-    return board
+    def clear_col(self, col):
+        for row in self.board:
+            row[col] = self.open
 
+    def add_large_item_to_row(self, row, col, item):
+        if col + len(item) > len(self.board[row]):
+            return "It doesn't fit!!!"
+        for piece in item:
+            self.board[row][col] = piece
+            col += 1
 
-def flip_board_x(board):
-    flip_board_y(board).reverse()
-    return board
+    def add_large_item_to_col(self, row, col, item):
+        if row + len(item) > len(self.board):
+            return "It doesn't fit!!!"
+        for piece in item:
+            self.board[row][col] = piece
+            row += 1
 
+    def add_item_diag_rising_left(self, row, col, item):
+        if row - len(item) < -1 or col - len(item) < -1:
+            return "It doesn't fit!!!"
+        for piece in item:
+            self.board[row][col] = piece
+            row -= 1
+            col -= 1
 
-def get_row(board, row):
-    return board[row]
+    def add_item_diag_rising_right(self, row, col, item):
+        if row - len(item) < -1 or col + len(item) > len(self.board[0]):
+            return "It doesn't fit!!!"
+        for piece in item:
+            self.board[row][col] = piece
+            row -= 1
+            col += 1
 
+    def add_item_diag_falling_left(self, row, col, item):
+        if row + len(item) > len(self.board) or col - len(item) < -1:
+            return "It doesn't fit!!!"
+        for piece in item:
+            self.board[row][col] = piece
+            row += 1
+            col -= 1
 
-def get_column(board, col):
-    return [row[col] for row in board]
+    def add_item_diag_falling_right(self, row, col, item):
+        if row + len(item) > len(self.board) or col + len(item) > len(self.board[0]):
+            return "It doesn't fit!!!"
+        for piece in item:
+            self.board[row][col] = piece
+            row += 1
+            col += 1
 
+    def add_n_items_randomly(self, quantity, item):
+        w, h, cache = len(self.board[0]), len(self.board), {}
+        while quantity:
+            point = [randint(0, h -1), randint(0, w - 1)]
+            if not cache.get(str(point)):
+                cache[str(point)] = point
+                quantity -= 1
+        for point in cache:
+            self.board[cache[point][0]][cache[point][1]] = item
 
-def get_square(board, i, j):
-    return board[i][j]
-
-
-def clear_square(board, i, j, open_square=" "):
-    return change_one_square(board, i, j, open_square)
-
-
-def clear_row(board, row, open_square=""):
-    board[row] = [open_square for col in board[row]]
-    return board
-
-
-def clear_col(board, col, open_square=" "):
-    for row in board:
-        row[col] = open_square
-    return board
-
-
-def add_large_item_to_row(board, row, col, item):
-    if col + len(item) >= len(board[row]):
-        return "It doesn't fit!!!"
-    for piece in item:
-        board[row][col] = piece
-        col += 1
-    return board
-
-
-def add_large_item_to_col(board, row, col, item):
-    if row + len(item) >= len(board):
-        return "It doesn't fit!!!"
-    for piece in item:
-        board[row][col] = piece
-        row += 1
-    return board
-
-
-def add_item_diag_rising_right(board, row, col, item):
-    if row - len(item) < 0 or col + len(item) >= len(board[0]):
-        return "It doesn't fit!!!"
-    for piece in item:
-        board[row][col] = piece
-        row -= 1
-        col += 1
-    return board
-
-
-def add_item_diag_falling_right(board, row, col, item):
-    if row + len(item) >= len(board) or col + len(item) >= len(board[0]):
-        return "It doesn't fit!!!"
-    for piece in item:
-        board[row][col] = piece
-        row += 1
-        col += 1
-    return board
-
-
-def add_item_diag_rising_left(board, row, col, item):
-    if row - len(item) < 0 or col - len(item) < 0:
-        return "It doesn't fit!!!"
-    for piece in item:
-        board[row][col] = piece
-        row -= 1
-        col -= 1
-    return board
-
-
-def add_item_diag_falling_left(board, row, col, item):
-    if row + len(item) >= len(board) or col - len(item) < 0:
-        return "It doesn't fit!!!"
-    for piece in item:
-        board[row][col] = piece
-        row += 1
-        col -= 1
-    return board
+    def drop_into_col(self, col, item):
+        for i in range(self.height -1, -1, -1):
+            if self.board[i][col] == self.open:
+                self.board[i][col] = item
+                break
 
 
-def add_n_items_randomly(board, quantity, item):
-    w, h, cache = len(board[0]), len(board), {}
-    while quantity:
-        point = [randint(0, h -1), randint(0, w - 1)]
-        if not cache.get(str(point)):
-            cache[str(point)] = point
-            quantity -= 1
-    for point in cache:
-        board[cache[point][0]][cache[point][1]] = item
-    return board
 
 
-def drop_into_col(board, col, item, open=" "):
-    for i in range(len(board) -1, -1, -1):
-        if board[i][col] == open:
-            board[i][col] = item
-            break
-    return board
 
 
-# TESTS -------------------------------------------------------------
 
-test = square_board(7, "hi")
-print("\n")
 
-pprint(test)
-print("\n")
 
-test = checker_squares(test, "-", 'O')
-print("\n")
-pprint(test)
 
-test = change_one_square(test, 0, 0, "hi")
-print("\n")
-pprint(test)
 
-test = flip_board_x(test)
-print("\n")
-pprint(test)
 
-test = add_item_diag_rising_left(test, 6, 5, "MMMM")
-print("\n")
-pprint(test)
 
-# test = clear_board(test)
-# print("\n")
-# pprint(test)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
